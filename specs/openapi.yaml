@@ -1,0 +1,159 @@
+openapi: 3.0.3
+info:
+  title: F1Strategist API
+  version: 0.1.0
+  description: API to compute optimal F1 pitstop strategies.
+paths:
+  /strategy:
+    post:
+      summary: Compute optimal pit-stop strategies for a race
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StrategyRequest'
+      responses:
+        '200':
+          description: Ranked strategy recommendations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyResponse'
+  /strategy/{id}:
+    get:
+      summary: Retrieve a previously computed strategy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Strategy record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyRecord'
+  /circuits/{id}:
+    get:
+      summary: Get fitted degradation & pit-loss info for a circuit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Circuit model info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitModel'
+
+components:
+  schemas:
+    StrategyRequest:
+      type: object
+      required: [season, round, current_lap, starting_compound, current_tire_age]
+      properties:
+        season:
+          type: integer
+          example: 2024
+        round:
+          type: integer
+          example: 5
+        current_lap:
+          type: integer
+          example: 28
+        starting_compound:
+          type: string
+          example: SOFT
+        current_tire_age:
+          type: integer
+          description: number of laps already completed on current tire
+          example: 12
+        allowed_compounds:
+          type: array
+          items:
+            type: string
+          example: [HARD, MEDIUM, SOFT]
+        max_pitstops:
+          type: integer
+          nullable: true
+        driver_id:
+          type: string
+          nullable: true
+        weather_override:
+          type: object
+          nullable: true
+    PitPlan:
+      type: object
+      properties:
+        pit_laps:
+          type: array
+          items:
+            type: integer
+        compounds:
+          type: array
+          items:
+            type: string
+        predicted_total_time:
+          type: number
+          description: seconds
+        per_lap_times:
+          type: array
+          items:
+            type: number
+        confidence:
+          type: object
+          properties:
+            mean:
+              type: number
+            ci_lower:
+              type: number
+            ci_upper:
+              type: number
+    StrategyResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/PitPlan'
+    StrategyRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        request:
+          $ref: '#/components/schemas/StrategyRequest'
+        response:
+          $ref: '#/components/schemas/StrategyResponse'
+    CircuitModel:
+      type: object
+      properties:
+        circuit_id:
+          type: string
+        season:
+          type: integer
+        models:
+          type: array
+          items:
+            type: object
+            properties:
+              compound:
+                type: string
+              model_type:
+                type: string
+              parameters:
+                type: object
+              pit_loss_seconds:
+                type: number
