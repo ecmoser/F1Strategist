@@ -44,3 +44,19 @@ logs/
 # Notebook outputs and data artifacts
 *.parquet
 data/
+
+# Environment files
+.env
+.env.local
+# Keep example env tracked
+!.env.example
+
+# Secrets and keys
+*.pem
+*.key
+.aws/
+.ssh/
+.gcp/
+.vault/
+.secrets
+
