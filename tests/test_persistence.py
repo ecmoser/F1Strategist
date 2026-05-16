@@ -10,9 +10,7 @@ def test_save_fitted_model_sqlite():
     conn = engine.connect()
 
     # create a simplified fitted_models table for testing
-    conn.execute(
-        text(
-            """
+    conn.execute(text("""
         CREATE TABLE fitted_models (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             circuit_id TEXT NOT NULL,
@@ -23,9 +21,7 @@ def test_save_fitted_model_sqlite():
             parameters TEXT NOT NULL,
             provenance TEXT
         )
-        """
-        )
-    )
+        """))
 
     params = {"median": 21.5, "ci_low": 20.0, "ci_high": 23.0}
     prov = {"source": "unit-test"}
@@ -42,7 +38,11 @@ def test_save_fitted_model_sqlite():
     )
 
     # verify row inserted
-    r = conn.execute(text("SELECT circuit_id, season, compound, parameters, provenance FROM fitted_models"))
+    r = conn.execute(
+        text(
+            "SELECT circuit_id, season, compound, parameters, provenance FROM fitted_models"
+        )
+    )
     rows = r.fetchall()
     assert len(rows) == 1
     row = rows[0]

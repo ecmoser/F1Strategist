@@ -30,13 +30,11 @@ def save_fitted_model(
     params_json = json.dumps(parameters)
     prov_json = json.dumps(provenance) if provenance is not None else None
 
-    sql = text(
-        """
+    sql = text("""
         INSERT INTO fitted_models (circuit_id, season, compound, model_version, model_type, parameters, provenance)
         VALUES (:circuit_id, :season, :compound, :model_version, :model_type, :parameters::jsonb, :provenance::jsonb)
         RETURNING id, created_at
-        """
-    )
+        """)
 
     # Some DBs (SQLite) don't support ::jsonb; try without cast if execution fails
     try:
@@ -54,12 +52,10 @@ def save_fitted_model(
         )
     except Exception:
         # fallback SQL without PG jsonb cast
-        sql2 = text(
-            """
+        sql2 = text("""
             INSERT INTO fitted_models (circuit_id, season, compound, model_version, model_type, parameters, provenance)
             VALUES (:circuit_id, :season, :compound, :model_version, :model_type, :parameters, :provenance)
-            """
-        )
+            """)
         res = conn.execute(
             sql2,
             {
