@@ -97,3 +97,15 @@ def fit_all_models(laps: pd.DataFrame) -> Dict[str, Dict[str, Any]]:
     best = min(aics, key=lambda k: aics[k])
     results["best"] = best
     return results
+
+
+def predict_lap_time(tire_age: float, model_type: str, params: list) -> float:
+    """Predict lap time given tire age and model parameters."""
+    if model_type == "linear":
+        return linear_model(tire_age, *params)
+    elif model_type == "quadratic":
+        return quadratic_model(tire_age, *params)
+    elif model_type == "exponential":
+        return exponential_model(tire_age, *params)
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")

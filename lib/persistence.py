@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 import os
 import json
 from sqlalchemy import create_engine, text
@@ -69,5 +69,40 @@ def save_fitted_model(
                 "provenance": prov_json,
             },
         )
+    
+    # Consume to avoid open cursors in some DBs/drivers
+    try:
+        res.fetchone()
+    except Exception:
+        pass
 
-    return res
+    return None
+
+
+def get_circuit_models(conn, circuit_id: str, season: int) -> List[Dict[str, Any]]:
+    """Retrieve all fitted models for a circuit and season."""
+    sql = text("""
+        SELECT compound, model_type, parameters
+        FROM fitted_models
+        WHERE circuit_id = :circuit_id AND season = :season
+    """)
+    res = conn.execute(sql, {"circuit_id": circuit_id, "season": season})
+    
+    models = []
+    pit_loss = 20.0 # Default
+    
+    for row in res:
+        data = dict(row._mapping)
+        if isinstance(data["parameters"], str):
+            data["parameters"] = json.loads(data["parameters"])
+        
+        if data["model_type"] == "pit_loss":
+            pit_loss = data["parameters"].get("median", 20.0)
+        else:
+            models.append(data)
+            
+    # Attach pit_loss to each model entry for the schema
+    for m in models:
+        m["pit_loss_seconds"] = pit_loss
+        
+    return models

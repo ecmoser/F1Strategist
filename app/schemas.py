@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 class StrategyRequest(BaseModel):
     season: int = Field(..., example=2024)
     round: int = Field(..., example=5)
+    circuit_id: Optional[str] = Field(None, example="hungaroring")
+    total_laps: int = Field(..., example=56)
     current_lap: int = Field(..., example=28)
     starting_compound: str = Field(..., example="SOFT")
     current_tire_age: int = Field(..., description="laps on current tire", example=12)
