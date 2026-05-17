@@ -80,19 +80,36 @@ def save_fitted_model(
 
 
 def get_circuit_models(conn, circuit_id: str, season: int) -> List[Dict[str, Any]]:
-    """Retrieve all fitted models for a circuit and season."""
+    """Retrieve the latest fitted models for a circuit and season."""
     sql = text("""
-        SELECT compound, model_type, parameters
+        SELECT DISTINCT ON (compound, model_type) compound, model_type, parameters, created_at
         FROM fitted_models
         WHERE circuit_id = :circuit_id AND season = :season
+        ORDER BY compound, model_type, created_at DESC
     """)
-    res = conn.execute(sql, {"circuit_id": circuit_id, "season": season})
+    # Fallback for SQLite which doesn't support DISTINCT ON
+    try:
+        res = conn.execute(sql, {"circuit_id": circuit_id, "season": season})
+    except Exception:
+        sql_fallback = text("""
+            SELECT compound, model_type, parameters, created_at
+            FROM fitted_models
+            WHERE circuit_id = :circuit_id AND season = :season
+            ORDER BY created_at DESC
+        """)
+        res = conn.execute(sql_fallback, {"circuit_id": circuit_id, "season": season})
     
     models = []
-    pit_loss = 20.0 # Default
+    pit_loss = 20.0
+    seen_compounds = set()
     
     for row in res:
         data = dict(row._mapping)
+        compound_key = (data["compound"], data["model_type"])
+        if compound_key in seen_compounds and data["model_type"] != "pit_loss":
+            continue
+        seen_compounds.add(compound_key)
+
         if isinstance(data["parameters"], str):
             data["parameters"] = json.loads(data["parameters"])
         

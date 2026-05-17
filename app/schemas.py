@@ -4,15 +4,15 @@ from pydantic import BaseModel, Field
 
 
 class StrategyRequest(BaseModel):
-    season: int = Field(..., example=2024)
-    round: int = Field(..., example=5)
-    circuit_id: Optional[str] = Field(None, example="hungaroring")
-    total_laps: int = Field(..., example=56)
-    current_lap: int = Field(..., example=28)
-    starting_compound: str = Field(..., example="SOFT")
-    current_tire_age: int = Field(..., description="laps on current tire", example=12)
+    season: int = Field(..., json_schema_extra={"example": 2024})
+    round: int = Field(..., json_schema_extra={"example": 5})
+    circuit_id: Optional[str] = Field(None, json_schema_extra={"example": "hungaroring"})
+    total_laps: int = Field(..., json_schema_extra={"example": 56})
+    current_lap: int = Field(..., json_schema_extra={"example": 28})
+    starting_compound: str = Field(..., json_schema_extra={"example": "SOFT"})
+    current_tire_age: int = Field(..., description="laps on current tire", json_schema_extra={"example": 12})
     allowed_compounds: Optional[List[str]] = Field(
-        None, example=["HARD", "MEDIUM", "SOFT"]
+        None, json_schema_extra={"example": ["HARD", "MEDIUM", "SOFT"]}
     )
     max_pitstops: Optional[int] = None
     driver_id: Optional[str] = None
@@ -23,7 +23,7 @@ class StrategyRequest(BaseModel):
 class PitPlan(BaseModel):
     pit_laps: List[int]
     compounds: List[str]
-    predicted_total_time: float  # seconds
+    predicted_remaining_time: float = Field(..., description="Estimated seconds to finish from current_lap")
     per_lap_times: List[float]
     confidence: Dict[str, float]
 

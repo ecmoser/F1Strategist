@@ -45,6 +45,7 @@ def test_basic_one_stop_strategy():
     # Hard lap times: 92, 92.1, 92.2...
     # Pit at lap 5: Soft laps 1-5 (90, 91, 92, 93, 94+15), Hard laps 6-20.
     assert "HARD" in plan.compounds
+    assert plan.predicted_remaining_time > 0
 
 
 def test_no_pit_if_too_expensive():
@@ -69,3 +70,35 @@ def test_no_pit_if_too_expensive():
     
     plans = compute_strategy(request, [soft_model])
     assert len(plans[0].pit_laps) == 0
+
+
+def test_mandatory_two_compounds():
+    # Even if SOFT is better, we MUST pit to HARD if we haven't used another compound
+    soft_model = CircuitModelEntry(
+        compound="SOFT",
+        model_type="linear",
+        parameters={"params": [90.0, 0.1]},
+        pit_loss_seconds=15.0
+    )
+    hard_model = CircuitModelEntry(
+        compound="HARD",
+        model_type="linear",
+        parameters={"params": [92.0, 0.1]},
+        pit_loss_seconds=15.0
+    )
+    
+    request = StrategyRequest(
+        season=2024,
+        round=1,
+        total_laps=10,
+        current_lap=1,
+        starting_compound="SOFT",
+        current_tire_age=1,
+        allowed_compounds=["SOFT", "HARD"],
+        max_pitstops=1
+    )
+    
+    plans = compute_strategy(request, [soft_model, hard_model])
+    # Must pit at least once to get a different compound
+    assert len(plans[0].pit_laps) >= 1
+    assert "HARD" in plans[0].compounds
