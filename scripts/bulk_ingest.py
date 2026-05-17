@@ -65,9 +65,12 @@ def main():
             "--out", out_file
         ]
         
+        env = os.environ.copy()
+        env["PYTHONPATH"] = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        
         try:
             # Run load_and_clean as a subprocess to isolate FastF1 cache/loading logic
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, check=True, env=env)
             log.info(f"Successfully processed Round {round_num}")
         except subprocess.CalledProcessError:
             log.error(f"Failed to process Round {round_num}")

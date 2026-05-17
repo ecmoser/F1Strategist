@@ -9,8 +9,13 @@ Usage:
 import argparse
 import logging
 import os
+import sys
 import pandas as pd
 from typing import Optional
+
+# Ensure project root is in sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from lib.degradation import fit_all_models
 from lib.persistence import get_engine, save_fitted_model
 

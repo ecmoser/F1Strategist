@@ -14,6 +14,9 @@ import logging
 import os
 import sys
 
+# Ensure project root is in sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 def parse_args():
     p = argparse.ArgumentParser(description="Load and clean race laps using FastF1")
