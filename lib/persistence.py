@@ -68,10 +68,10 @@ def save_fitted_model(
 def get_circuit_models(conn, circuit_id: str, season: int) -> List[Dict[str, Any]]:
     """Retrieve the latest fitted models for a circuit and season."""
     sql = text("""
-        SELECT DISTINCT ON (compound, model_type) compound, model_type, parameters, created_at
+        SELECT DISTINCT ON (compound) compound, model_type, parameters, created_at
         FROM fitted_models
         WHERE circuit_id = :circuit_id AND season = :season
-        ORDER BY compound, model_type, created_at DESC
+        ORDER BY compound, created_at DESC
     """)
     # Fallback for SQLite which doesn't support DISTINCT ON
     try:
@@ -91,7 +91,10 @@ def get_circuit_models(conn, circuit_id: str, season: int) -> List[Dict[str, Any
     
     for row in res:
         data = dict(row._mapping)
-        compound_key = (data["compound"], data["model_type"])
+        compound_key = data["compound"]
+        
+        # We process 'pit_loss' separately, but if it has a compound like 'ALL',
+        # we can just track the compound. For safety, allow one pit_loss to pass.
         if compound_key in seen_compounds and data["model_type"] != "pit_loss":
             continue
         seen_compounds.add(compound_key)

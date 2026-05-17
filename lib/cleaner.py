@@ -24,6 +24,13 @@ def clean_laps_df(df: pd.DataFrame, season: int, round: int, circuit_id: Optiona
         else:
             df["lap_time_s"] = np.nan
 
+    # normalize lap number
+    lap_col = "LapNumber" if "LapNumber" in df.columns else "lapNumber"
+    if lap_col in df.columns:
+        df["lap_number"] = pd.to_numeric(df[lap_col], errors="coerce")
+    else:
+        df["lap_number"] = df.index + 1
+
     # detect pit laps
     is_pit = pd.Series(False, index=df.index)
     for col in ("PitInTime", "PitOutTime", "PitStopTime", "PitDuration"):
@@ -66,9 +73,14 @@ def clean_laps_df(df: pd.DataFrame, season: int, round: int, circuit_id: Optiona
         med = df["lap_time_s"].median()
         df = df[df["lap_time_s"] <= med * 1.4]
 
+    # Fuel Correction: Remove the effect of fuel burn-off
+    # Estimated gain: 0.035s per lap (lighter car gets faster)
+    # To isolate tire wear, we add this gain back so the car appears to only change due to tires.
+    df["lap_time_s"] = df["lap_time_s"] + (0.035 * df["lap_number"])
+
     # Compute tire age per driver stint
-    if "Driver" in df.columns and "Compound" in df.columns and "LapNumber" in df.columns:
-        df = df.sort_values(["Driver", "LapNumber"])
+    if "Driver" in df.columns and "Compound" in df.columns and "lap_number" in df.columns:
+        df = df.sort_values(["Driver", "lap_number"])
         # A stint change is a change in driver or compound
         # Or if there was a pit stop? Usually compound change implies pit stop.
         # But same compound after pit stop is also a new stint.
@@ -87,10 +99,7 @@ def clean_laps_df(df: pd.DataFrame, season: int, round: int, circuit_id: Optiona
     out["round"] = round
     out["circuit_id"] = circuit_id
     out["driver"] = df["Driver"] if "Driver" in df.columns else df.get("driverId")
-    out["lap_number"] = pd.to_numeric(
-        df["LapNumber"] if "LapNumber" in df.columns else df.get("lapNumber", df.index),
-        errors="coerce",
-    )
+    out["lap_number"] = df["lap_number"]
     out["lap_time_s"] = df["lap_time_s"]
     out["compound"] = df["Compound"] if "Compound" in df.columns else df.get("compound")
     out["tire_age"] = df["tire_age"]

@@ -41,20 +41,28 @@ def fit_model(laps: pd.DataFrame, model: str = "exponential") -> Dict[str, Any]:
     y = laps["lap_time_s"].astype(float).values
     n = len(y)
 
+    # bounds = (lower_bounds, upper_bounds)
+    # For all models, we want the 'degradation' coefficient to be >= 0
     if model == "linear":
         p0 = [np.median(y), 0.0]
+        # a + b*x -> b >= 0
+        bounds = ([-np.inf, 0.0], [np.inf, np.inf])
         func = linear_model
     elif model == "quadratic":
         p0 = [np.median(y), 0.0, 0.0]
+        # a + b*x + c*x^2 -> b, c >= 0
+        bounds = ([-np.inf, 0.0, 0.0], [np.inf, np.inf, np.inf])
         func = quadratic_model
     elif model == "exponential":
-        p0 = [np.min(y), (np.median(y) - np.min(y)) or 1.0, -0.001]
+        p0 = [np.min(y), 0.001, 0.001]
+        # a + b * exp(c * x) -> b, c >= 0
+        bounds = ([-np.inf, 0.0, 0.0], [np.inf, np.inf, np.inf])
         func = exponential_model
     else:
         raise ValueError(f"Unknown model: {model}")
 
     try:
-        popt, pcov = curve_fit(func, x, y, p0=p0, maxfev=10000)
+        popt, pcov = curve_fit(func, x, y, p0=p0, bounds=bounds, maxfev=10000)
     except Exception:
         # fallback: return empty fit
         return {

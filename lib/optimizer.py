@@ -1,7 +1,11 @@
 from typing import List, Dict, Any, Optional, Tuple
+import sys
 import numpy as np
 from lib.degradation import predict_lap_time
 from app.schemas import StrategyRequest, PitPlan, CircuitModelEntry
+
+# Increase recursion limit for deep DP trees (e.g. 70+ laps)
+sys.setrecursionlimit(2000)
 
 
 def compute_strategy(
@@ -45,7 +49,9 @@ def compute_strategy(
         best_action = ("stay", None)
         
         # Option 2: Pit
-        if n_stops < max_stops:
+        # F1 rules/logic: You generally cannot satisfy the two-compound rule by pitting on the last lap 
+        # (must complete at least one lap on the new compound).
+        if n_stops < max_stops and lap < total_laps:
             pit_loss = request.custom_pit_loss_override or (model.pit_loss_seconds if model else 20.0)
             
             for next_compound in allowed_compounds:
