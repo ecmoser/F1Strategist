@@ -26,9 +26,11 @@ def test_omit_lap1_and_pit_markers():
     assert 1 not in out["lap_number"].values
     # pit lap (3) should be marked as is_pit
     assert out.loc[out["lap_number"] == 3, "is_pit"].iloc[0]
-    # adjacent laps should be marked as in/out
-    assert out.loc[out["lap_number"] == 2, "is_inout"].iloc[0]
-    assert out.loc[out["lap_number"] == 4, "is_inout"].iloc[0]
+    # adjacent laps should NOT be marked as in/out anymore
+    assert not out.loc[out["lap_number"] == 2, "is_inout"].iloc[0]
+    assert not out.loc[out["lap_number"] == 4, "is_inout"].iloc[0]
+    # lap 3 is pit so it is also marked as in/out
+    assert out.loc[out["lap_number"] == 3, "is_inout"].iloc[0]
 
 
 def test_sc_filtering():

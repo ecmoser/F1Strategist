@@ -34,35 +34,9 @@ def clean_laps_df(df: pd.DataFrame, season: int, round: int) -> pd.DataFrame:
             is_pit = is_pit | df[col].astype(bool)
     df["is_pit"] = is_pit
 
-    # mark in/out laps (per driver)
-    df = (
-        df.sort_values(["Driver", "LapNumber"])
-        if "Driver" in df.columns
-        else df.sort_values("LapNumber")
-    )
-    df["is_inout"] = False
-    if "Driver" in df.columns:
-        for _, g in df.groupby("Driver"):
-            idx = g.index
-            pits = g["is_pit"].values
-            inout = [False] * len(g)
-            for i, pit in enumerate(pits):
-                if pit:
-                    if i - 1 >= 0:
-                        inout[i - 1] = True
-                    if i + 1 < len(g):
-                        inout[i + 1] = True
-            df.loc[idx, "is_inout"] = inout
-    else:
-        pits = df["is_pit"].values
-        inout = [False] * len(df)
-        for i, pit in enumerate(pits):
-            if pit:
-                if i - 1 >= 0:
-                    inout[i - 1] = True
-                if i + 1 < len(df):
-                    inout[i + 1] = True
-        df["is_inout"] = inout
+    # In/out laps are already marked by the data as pit laps (via PitInTime/PitOutTime)
+    # We do not mark adjacent laps.
+    df["is_inout"] = df["is_pit"]
 
     # drop missing lap times
     df = df[~df["lap_time_s"].isna()].copy()
@@ -76,23 +50,21 @@ def clean_laps_df(df: pd.DataFrame, season: int, round: int) -> pd.DataFrame:
                 vals.str.contains("safety")
                 | vals.str.contains("vsc")
                 | vals.str.contains("sc")
+                | vals.str.contains("4")
+                | vals.str.contains("6")
+                | vals.str.contains("7")
             )
             break
     if sc_mask is not None:
         df = df[~sc_mask]
 
     # remove outliers per driver (lap_time > median*1.4)
-    def remove_outliers(g):
-        med = np.median(g["lap_time_s"].values)
-        return g[g["lap_time_s"] <= med * 1.4]
-
     if "Driver" in df.columns:
-        # pass include_groups=False to avoid pandas FutureWarning about grouping columns
-        df = df.groupby("Driver", group_keys=False).apply(
-            remove_outliers, include_groups=False
-        )
+        meds = df.groupby("Driver")["lap_time_s"].transform("median")
+        df = df[df["lap_time_s"] <= meds * 1.4]
     else:
-        df = remove_outliers(df)
+        med = df["lap_time_s"].median()
+        df = df[df["lap_time_s"] <= med * 1.4]
 
     # standardize output columns
     out = pd.DataFrame()

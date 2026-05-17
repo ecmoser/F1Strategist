@@ -18,7 +18,7 @@ import sys
 def parse_args():
     p = argparse.ArgumentParser(description="Load and clean race laps using FastF1")
     p.add_argument("--season", type=int, required=True)
-    p.add_argument("--round", required=True)
+    p.add_argument("--round", type=int, required=True)
     p.add_argument("--session", default="R", help="Session identifier (R for race)")
     p.add_argument("--out", default=None, help="Output CSV path")
     return p.parse_args()

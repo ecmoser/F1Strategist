@@ -55,6 +55,7 @@ def save_fitted_model(
         sql2 = text("""
             INSERT INTO fitted_models (circuit_id, season, compound, model_version, model_type, parameters, provenance)
             VALUES (:circuit_id, :season, :compound, :model_version, :model_type, :parameters, :provenance)
+            RETURNING id, created_at
             """)
         res = conn.execute(
             sql2,

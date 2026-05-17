@@ -19,7 +19,8 @@ def test_save_fitted_model_sqlite():
             model_version TEXT NOT NULL,
             model_type TEXT NOT NULL,
             parameters TEXT NOT NULL,
-            provenance TEXT
+            provenance TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """))
 

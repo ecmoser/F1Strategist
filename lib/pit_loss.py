@@ -40,9 +40,6 @@ def extract_pit_losses(
                 mask = mask & ~window_df["is_inout"]
             candidates = window_df.loc[mask, "lap_time_s"].astype(float).values
             if len(candidates) == 0:
-                # fallback to all non-pit laps for driver
-                candidates = g.loc[~g["is_pit"], "lap_time_s"].astype(float).values
-            if len(candidates) == 0:
                 continue
             baseline = float(np.median(candidates))
             losses.append(pit_time - baseline)
