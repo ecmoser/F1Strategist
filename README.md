@@ -86,14 +86,18 @@ Request an optimal strategy for a race in progress:
 curl -X POST "http://localhost:8000/strategy" \
      -H "Content-Type: application/json" \
      -d '{
-           "season": 2024,
-           "round": 5,
+           "season": 2023,
+           "round": 1,
+           "circuit_id": "Sakhir",
+           "total_laps": 57,
            "current_lap": 15,
-           "starting_compound": "MEDIUM",
+           "starting_compound": "SOFT",
            "current_tire_age": 15,
            "allowed_compounds": ["HARD", "MEDIUM", "SOFT"]
          }'
 ```
+
+> **⚠️ Note on Case-Sensitivity:** The `circuit_id` is case-sensitive and must exactly match the value stored in the database (e.g., "Sakhir" vs "sakhir"). If your request returns a 404, check your database via Adminer (`http://localhost:8080`) to verify the exact string stored in the `fitted_models` table.
 
 ### Health Check
 ```bash
