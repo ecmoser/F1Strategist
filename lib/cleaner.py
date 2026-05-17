@@ -82,7 +82,7 @@ def clean_laps_df(df: pd.DataFrame, season: int, round: int, circuit_id: Optiona
         df["tire_age"] = np.nan
 
     # standardize output columns
-    out = pd.DataFrame()
+    out = pd.DataFrame(index=df.index)
     out["season"] = season
     out["round"] = round
     out["circuit_id"] = circuit_id

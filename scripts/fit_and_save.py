@@ -17,6 +17,7 @@ from typing import Optional
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from lib.degradation import fit_all_models
+from lib.pit_loss import median_pit_loss_with_ci, save_pit_loss_results
 from lib.persistence import get_engine, save_fitted_model
 
 
@@ -45,14 +46,14 @@ def process_file(file_path: str, engine, version: str, dry_run: bool, log: loggi
     # Filter out pit laps for degradation fitting
     df_fit = df[~df["is_pit"]].copy()
 
+    # 1. Fit Degradation Models
     # Group by circuit and compound (and season)
-    # Usually one file is one race (one circuit, one season), but multiple compounds
     for (circuit_id, season, compound), group in df_fit.groupby(["circuit_id", "season", "compound"]):
         if len(group) < 5:
             log.warning("Skipping %s %s: too few laps (%d)", circuit_id, compound, len(group))
             continue
 
-        log.info("Fitting models for %s %s (season %d)...", circuit_id, compound, season)
+        log.info("Fitting degradation for %s %s (season %d)...", circuit_id, compound, season)
         results = fit_all_models(group)
         best_type = results["best"]
         best_model = results[best_type]
@@ -84,9 +85,21 @@ def process_file(file_path: str, engine, version: str, dry_run: bool, log: loggi
                         parameters=best_model,
                         provenance=provenance
                     )
-                log.info("Saved %s %s to database", circuit_id, compound)
+                log.info("Saved degradation %s %s to database", circuit_id, compound)
             except Exception as e:
-                log.error("Failed to save %s %s: %s", circuit_id, compound, e)
+                log.error("Failed to save degradation %s %s: %s", circuit_id, compound, e)
+
+    # 2. Estimate Pit Loss
+    log.info("Estimating pit loss for %s (season %d)...", os.path.basename(file_path), int(df["season"].iloc[0]))
+    try:
+        # Compute pit loss per circuit (already grouping by circuit_id in the file)
+        pit_results = median_pit_loss_with_ci(df, group_cols=["circuit_id"])
+        if not dry_run:
+            with engine.begin() as conn:
+                save_pit_loss_results(conn, pit_results, season=int(df["season"].iloc[0]), model_version=version)
+            log.info("Saved pit loss results to database")
+    except Exception as e:
+        log.error("Failed to compute/save pit loss: %s", e)
 
 
 def main():

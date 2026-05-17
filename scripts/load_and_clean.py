@@ -13,6 +13,7 @@ import argparse
 import logging
 import os
 import sys
+import pandas as pd
 
 # Ensure project root is in sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -49,10 +50,16 @@ def main():
         log.error("FastF1 failed to load session: %s", e)
         sys.exit(1)
 
-    circuit_id = getattr(session.event, "CircuitId", None)
-    if not circuit_id:
-        # fallback to Location if CircuitId is missing
-        circuit_id = session.event.get("Location", "unknown")
+    try:
+        circuit_id = session.event["CircuitId"]
+    except (KeyError, TypeError):
+        try:
+            circuit_id = session.event["Location"]
+        except (KeyError, TypeError):
+            circuit_id = "unknown"
+
+    if pd.isna(circuit_id):
+        circuit_id = "unknown"
 
     laps = session.laps.copy()
     if laps.empty:
