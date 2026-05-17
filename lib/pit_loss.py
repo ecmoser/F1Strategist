@@ -115,7 +115,7 @@ def save_pit_loss_results(
 
         if isinstance(key, tuple):
             circuit_id = str(key[0])
-            compound = str(key[1])
+            compound = str(key[1]) if len(key) > 1 else "ALL"
         else:
             circuit_id = str(key)
             compound = "ALL"

@@ -23,54 +23,40 @@ def save_fitted_model(
     parameters: Dict[str, Any],
     provenance: Optional[Dict[str, Any]] = None,
 ):
-    """Insert a fitted model record into `fitted_models` table.
-
-    `conn` can be a SQLAlchemy Connection or Engine; caller is responsible for committing when needed.
-    """
+    """Insert a fitted model record into `fitted_models` table."""
     params_json = json.dumps(parameters)
     prov_json = json.dumps(provenance) if provenance is not None else None
 
-    sql = text("""
-        INSERT INTO fitted_models (circuit_id, season, compound, model_version, model_type, parameters, provenance)
-        VALUES (:circuit_id, :season, :compound, :model_version, :model_type, :parameters::jsonb, :provenance::jsonb)
-        RETURNING id, created_at
-        """)
+    # Detect dialect
+    is_postgres = "postgres" in str(conn.engine.url.drivername).lower()
 
-    # Some DBs (SQLite) don't support ::jsonb; try without cast if execution fails
-    try:
-        res = conn.execute(
-            sql,
-            {
-                "circuit_id": circuit_id,
-                "season": season,
-                "compound": compound,
-                "model_version": model_version,
-                "model_type": model_type,
-                "parameters": params_json,
-                "provenance": prov_json,
-            },
-        )
-    except Exception:
-        # fallback SQL without PG jsonb cast
-        sql2 = text("""
+    if is_postgres:
+        sql = text("""
+            INSERT INTO fitted_models (circuit_id, season, compound, model_version, model_type, parameters, provenance)
+            VALUES (:circuit_id, :season, :compound, :model_version, :model_type, :parameters\\:\\:jsonb, :provenance\\:\\:jsonb)
+            RETURNING id, created_at
+            """)
+    else:
+        sql = text("""
             INSERT INTO fitted_models (circuit_id, season, compound, model_version, model_type, parameters, provenance)
             VALUES (:circuit_id, :season, :compound, :model_version, :model_type, :parameters, :provenance)
             RETURNING id, created_at
             """)
-        res = conn.execute(
-            sql2,
-            {
-                "circuit_id": circuit_id,
-                "season": season,
-                "compound": compound,
-                "model_version": model_version,
-                "model_type": model_type,
-                "parameters": params_json,
-                "provenance": prov_json,
-            },
-        )
-    
-    # Consume to avoid open cursors in some DBs/drivers
+
+    res = conn.execute(
+        sql,
+        {
+            "circuit_id": circuit_id,
+            "season": season,
+            "compound": compound,
+            "model_version": model_version,
+            "model_type": model_type,
+            "parameters": params_json,
+            "provenance": prov_json,
+        },
+    )
+
+    # Consume result to avoid open cursors
     try:
         res.fetchone()
     except Exception:
