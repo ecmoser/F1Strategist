@@ -14,9 +14,13 @@ import logging
 import os
 import sys
 import pandas as pd
+from dotenv import load_dotenv
 
 # Ensure project root is in sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Load environment variables
+load_dotenv()
 
 
 def parse_args():

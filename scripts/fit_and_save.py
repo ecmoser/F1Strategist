@@ -12,9 +12,13 @@ import os
 import sys
 import pandas as pd
 from typing import Optional
+from dotenv import load_dotenv
 
 # Ensure project root is in sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Load environment variables from .env file
+load_dotenv()
 
 from lib.degradation import fit_all_models
 from lib.pit_loss import median_pit_loss_with_ci, save_pit_loss_results
