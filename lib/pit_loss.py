@@ -89,3 +89,44 @@ def median_pit_loss_with_ci(
         }
 
     return results
+
+
+def save_pit_loss_results(
+    conn,
+    results: Dict[str, Dict[str, float]],
+    season: int,
+    model_version: str = "v1",
+):
+    """Persist pit-loss summaries to the database using `save_fitted_model`.
+
+    `results` is the output of `median_pit_loss_with_ci`.
+    Key is repr of circuit_id or (circuit_id, compound).
+    """
+    from lib.persistence import save_fitted_model
+
+    for key_repr, stats in results.items():
+        # results key is repr(circuit_id) or repr((circuit_id, compound))
+        # we need to extract them back if possible, or just use them as circuit_id
+        try:
+            import ast
+            key = ast.literal_eval(key_repr)
+        except Exception:
+            key = key_repr
+
+        if isinstance(key, tuple):
+            circuit_id = str(key[0])
+            compound = str(key[1])
+        else:
+            circuit_id = str(key)
+            compound = "ALL"
+
+        save_fitted_model(
+            conn,
+            circuit_id=circuit_id,
+            season=season,
+            compound=compound,
+            model_version=model_version,
+            model_type="pit_loss",
+            parameters=stats,
+            provenance={"source": "historical_bootstrap"}
+        )

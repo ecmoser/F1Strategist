@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 
-def clean_laps_df(df: pd.DataFrame, season: int, round: int) -> pd.DataFrame:
+def clean_laps_df(df: pd.DataFrame, season: int, round: int, circuit_id: Optional[str] = None) -> pd.DataFrame:
     """Clean a laps DataFrame (in-memory) and return standardized rows.
 
     Expects columns like `LapNumber` or `lapNumber`, `LapTime` (timedelta) or
@@ -66,10 +66,26 @@ def clean_laps_df(df: pd.DataFrame, season: int, round: int) -> pd.DataFrame:
         med = df["lap_time_s"].median()
         df = df[df["lap_time_s"] <= med * 1.4]
 
+    # Compute tire age per driver stint
+    if "Driver" in df.columns and "Compound" in df.columns and "LapNumber" in df.columns:
+        df = df.sort_values(["Driver", "LapNumber"])
+        # A stint change is a change in driver or compound
+        # Or if there was a pit stop? Usually compound change implies pit stop.
+        # But same compound after pit stop is also a new stint.
+        # We can use is_pit to mark stint boundaries too.
+        stint_boundary = (df["Driver"] != df["Driver"].shift()) | \
+                         (df["Compound"] != df["Compound"].shift()) | \
+                         (df["is_pit"].shift(fill_value=False))
+        df["stint_id"] = stint_boundary.cumsum()
+        df["tire_age"] = df.groupby("stint_id").cumcount() + 1
+    else:
+        df["tire_age"] = np.nan
+
     # standardize output columns
     out = pd.DataFrame()
     out["season"] = season
     out["round"] = round
+    out["circuit_id"] = circuit_id
     out["driver"] = df["Driver"] if "Driver" in df.columns else df.get("driverId")
     out["lap_number"] = pd.to_numeric(
         df["LapNumber"] if "LapNumber" in df.columns else df.get("lapNumber", df.index),
@@ -77,6 +93,7 @@ def clean_laps_df(df: pd.DataFrame, season: int, round: int) -> pd.DataFrame:
     )
     out["lap_time_s"] = df["lap_time_s"]
     out["compound"] = df["Compound"] if "Compound" in df.columns else df.get("compound")
+    out["tire_age"] = df["tire_age"]
     out["is_pit"] = df["is_pit"]
     out["is_inout"] = df["is_inout"]
 

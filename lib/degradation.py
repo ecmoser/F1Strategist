@@ -28,16 +28,16 @@ def compute_aic_bic(n: int, rss: float, k: int) -> Tuple[float, float]:
 def fit_model(laps: pd.DataFrame, model: str = "exponential") -> Dict[str, Any]:
     """Fit a degradation model to `laps` DataFrame.
 
-    Expects `laps` to have columns: `lap_number`, `lap_time_s`.
+    Expects `laps` to have columns: `tire_age`, `lap_time_s`.
     Returns dict with: model, params, cov, rss, aic, bic, n, k
     """
     if laps is None or laps.empty:
         raise ValueError("laps must be a non-empty DataFrame")
 
-    if not {"lap_number", "lap_time_s"}.issubset(laps.columns):
-        raise ValueError("laps must contain 'lap_number' and 'lap_time_s' columns")
+    if not {"tire_age", "lap_time_s"}.issubset(laps.columns):
+        raise ValueError("laps must contain 'tire_age' and 'lap_time_s' columns")
 
-    x = laps["lap_number"].astype(float).values
+    x = laps["tire_age"].astype(float).values
     y = laps["lap_time_s"].astype(float).values
     n = len(y)
 

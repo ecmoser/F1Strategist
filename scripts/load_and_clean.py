@@ -46,6 +46,11 @@ def main():
         log.error("FastF1 failed to load session: %s", e)
         sys.exit(1)
 
+    circuit_id = getattr(session.event, "CircuitId", None)
+    if not circuit_id:
+        # fallback to Location if CircuitId is missing
+        circuit_id = session.event.get("Location", "unknown")
+
     laps = session.laps.copy()
     if laps.empty:
         log.error("No laps found for this session")
@@ -55,7 +60,7 @@ def main():
     try:
         from lib.cleaner import clean_laps_df
 
-        final = clean_laps_df(laps, season=args.season, round=args.round)
+        final = clean_laps_df(laps, season=args.season, round=args.round, circuit_id=circuit_id)
     except Exception as e:
         log.exception("Failed to clean laps using lib.cleaner: %s", e)
         sys.exit(1)

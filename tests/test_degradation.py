@@ -5,18 +5,18 @@ from lib.degradation import fit_all_models
 
 
 def make_synthetic_degradation(model_type="linear", n=30, noise=0.2):
-    lap = np.arange(1, n + 1)
+    age = np.arange(1, n + 1)
     if model_type == "linear":
-        y = 90.0 + 0.05 * lap
+        y = 90.0 + 0.05 * age
     elif model_type == "quadratic":
-        y = 90.0 + 0.02 * lap + 0.001 * lap**2
+        y = 90.0 + 0.02 * age + 0.001 * age**2
     else:
-        # exponential: a + b * exp(c * lap)
-        y = 89.0 + 2.0 * np.exp(0.01 * lap)
+        # exponential: a + b * exp(c * age)
+        y = 89.0 + 2.0 * np.exp(0.01 * age)
 
     rng = np.random.default_rng(1)
     y = y + rng.normal(0, noise, size=len(y))
-    return pd.DataFrame({"lap_number": lap, "lap_time_s": y})
+    return pd.DataFrame({"tire_age": age, "lap_time_s": y})
 
 
 def test_fit_models_selects_correct():

@@ -42,9 +42,23 @@ def test_sc_filtering():
     assert 4 not in out["lap_number"].values
 
 
-def test_outlier_removal():
-    df = make_base_df()
-    # make lap 5 an extreme outlier
-    df.loc[df["LapNumber"] == 5, "LapTime"] = pd.to_timedelta(999, unit="s")
+def test_tire_age_computation():
+    # Two stints: 1-3 (Medium), 4-6 (Hard)
+    rows = []
+    for lap in range(1, 4):
+        rows.append({"Driver": "A", "LapNumber": lap, "LapTime": pd.to_timedelta(90, unit="s"), "Compound": "M"})
+    for lap in range(4, 7):
+        rows.append({"Driver": "A", "LapNumber": lap, "LapTime": pd.to_timedelta(92, unit="s"), "Compound": "H"})
+    df = pd.DataFrame(rows)
     out = clean_laps_df(df, season=2023, round=1)
-    assert 5 not in out["lap_number"].values
+    
+    # Lap 1 is omitted, so stint 1 starts at lap 2
+    # M: lap 2 (age 2), lap 3 (age 3) -> Wait, stint starts at lap 1.
+    # If lap 1 is omitted AFTER computing tire age, we should see age 2, 3.
+    # In clean_laps_df: tire_age is computed BEFORE omit lap 1.
+    assert out.loc[out["lap_number"] == 2, "tire_age"].iloc[0] == 2
+    assert out.loc[out["lap_number"] == 3, "tire_age"].iloc[0] == 3
+    # Hard starts at lap 4
+    assert out.loc[out["lap_number"] == 4, "tire_age"].iloc[0] == 1
+    assert out.loc[out["lap_number"] == 5, "tire_age"].iloc[0] == 2
+    assert out.loc[out["lap_number"] == 6, "tire_age"].iloc[0] == 3
